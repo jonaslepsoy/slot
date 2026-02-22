@@ -41,12 +41,24 @@ function onSyncPacketReceived(deviceId, timestamp) {
   if (store.getMode() !== 'sync') return;
   const deviceIds = Object.keys(DEVICES);
   const syncBuffer = store.getSyncBuffer();
+  const round = store.getSyncRounds().length + 1;
   const waiting = deviceIds.filter(id => syncBuffer[id] === undefined && id !== deviceId);
-  console.log(`\n  ✓ ${deviceId} synced (timestamp: ${timestamp.toFixed(3)} ms)`);
+  console.log(`\n  ✓ ${deviceId} synced (round ${round}, timestamp: ${timestamp.toFixed(3)} ms)`);
   if (waiting.length > 0) {
     console.log(`  Waiting for: ${waiting.join(', ')}`);
     rl.prompt();
   }
+}
+
+function onSyncRoundComplete(roundNum, targetRounds, roundOffsets) {
+  const offsetStrs = Object.entries(roundOffsets).map(([id, o]) => `${id}: ${o >= 0 ? '+' : ''}${o.toFixed(1)}ms`).join(', ');
+  console.log(`\n  ✓ Round ${roundNum}/${targetRounds} complete  [${offsetStrs}]`);
+  if (roundNum < targetRounds) {
+    console.log(`  Clap again! ${targetRounds - roundNum} more round(s) needed.`);
+  } else {
+    console.log('  All rounds collected — computing final offsets…');
+  }
+  rl.prompt();
 }
 
 // ── Command handler ────────────────────────────────────────────────────────────
@@ -61,10 +73,11 @@ function handleCommand(line) {
       if (target === 'sync') {
         store.setMode('sync');
         store.clearSyncBuffer();
+        store.clearSyncRounds();
         store.clearOffsets();
         console.log('\n  ✓ Switched to sync mode.');
-        console.log('  Place all phones side-by-side, make a sharp sound,');
-        console.log('  and have each phone send a packet to POST /packet.\n');
+        console.log(`  Place all phones side-by-side and clap ${require('./config').SYNC_ROUNDS} times.`);
+        console.log('  Each clap is one sync round — more rounds = better accuracy.\n');
       } else if (target === 'localize') {
         store.setMode('localize');
         store.clearSyncBuffer();
@@ -144,4 +157,4 @@ function start() {
   rl.on('close', () => process.exit(0));
 }
 
-module.exports = { start, onSyncPacketReceived };
+module.exports = { start, onSyncPacketReceived, onSyncRoundComplete };

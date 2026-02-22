@@ -15,12 +15,19 @@ let currentMode = 'localize'; // 'sync' | 'localize'
 function getMode() { return currentMode; }
 function setMode(mode) { currentMode = mode; }
 
-// Temporary buffer for packets received during sync mode: deviceId -> timestamp
+// Temporary buffer for packets received during sync mode: deviceId -> { timestamp, receivedAt }
 const syncBuffer = {};
 
-function setSyncPacket(deviceId, timestamp) { syncBuffer[deviceId] = timestamp; }
+function setSyncPacket(deviceId, timestamp) { syncBuffer[deviceId] = { timestamp, receivedAt: Date.now() }; }
 function getSyncBuffer() { return { ...syncBuffer }; }
 function clearSyncBuffer() { Object.keys(syncBuffer).forEach(k => delete syncBuffer[k]); }
+
+// Completed sync rounds: array of { offsets: { deviceId: offsetMs }, ... }
+const syncRounds = [];
+
+function addSyncRound(round) { syncRounds.push(round); }
+function getSyncRounds() { return [...syncRounds]; }
+function clearSyncRounds() { syncRounds.length = 0; }
 
 // Map of deviceId -> clock offset in milliseconds.
 // offset = (reference time) - (device reported time) for the sync event.
@@ -87,6 +94,9 @@ module.exports = {
   setSyncPacket,
   getSyncBuffer,
   clearSyncBuffer,
+  addSyncRound,
+  getSyncRounds,
+  clearSyncRounds,
   setClockOffset,
   getClockOffset,
   getAllOffsets,

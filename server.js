@@ -27,7 +27,7 @@ const app = express();
 const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 const packetRouter = require('./routes/packet');

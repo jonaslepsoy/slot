@@ -42,6 +42,25 @@ function localize(receivers) {
   const rd10 = tdoa10 * SPEED_OF_SOUND; // d1 - d0
   const rd20 = tdoa20 * SPEED_OF_SOUND; // d2 - d0
 
+  console.log(`[tdoa] Receivers: ${receivers.map(r => `${r.deviceId}(${r.x},${r.y})@${r.timestamp}`).join('  ')}`);
+  console.log(`[tdoa] TDOA: t10=${tdoa10.toFixed(6)}s t20=${tdoa20.toFixed(6)}s → rd10=${rd10.toFixed(4)}m rd20=${rd20.toFixed(4)}m`);
+
+  // ── Physical feasibility check ────────────────────────────────────────────
+  // The range difference between two receivers can never exceed their
+  // inter-receiver distance (geometry).  If it does, the timestamps are
+  // too noisy for a valid solution.
+  const maxRd10 = dist(r0.x, r0.y, r1.x, r1.y);
+  const maxRd20 = dist(r0.x, r0.y, r2.x, r2.y);
+
+  if (Math.abs(rd10) > maxRd10 || Math.abs(rd20) > maxRd20) {
+    console.log(
+      `[tdoa] REJECTED: range differences exceed physical limits ` +
+      `(|rd10|=${Math.abs(rd10).toFixed(2)}m > max ${maxRd10.toFixed(2)}m: ${Math.abs(rd10) > maxRd10}, ` +
+      ` |rd20|=${Math.abs(rd20).toFixed(2)}m > max ${maxRd20.toFixed(2)}m: ${Math.abs(rd20) > maxRd20})`
+    );
+    return null;
+  }
+
   // Initial estimate: centroid of all receiver positions.
   let x = (r0.x + r1.x + r2.x) / 3;
   let y = (r0.y + r1.y + r2.y) / 3;
@@ -91,9 +110,24 @@ function localize(receivers) {
   const d0f = dist(x, y, r0.x, r0.y) || 1e-9;
   const d1f = dist(x, y, r1.x, r1.y) || 1e-9;
   const d2f = dist(x, y, r2.x, r2.y) || 1e-9;
-  const res1 = Math.abs((d1f - d0f) - rd10 * SPEED_OF_SOUND / SPEED_OF_SOUND);
-  const res2 = Math.abs((d2f - d0f) - rd20 * SPEED_OF_SOUND / SPEED_OF_SOUND);
+  const res1 = Math.abs((d1f - d0f) - rd10);
+  const res2 = Math.abs((d2f - d0f) - rd20);
   const residual = Math.sqrt((res1 ** 2 + res2 ** 2) / 2);
+
+  // ── Room-bounds sanity check ──────────────────────────────────────────────
+  // Reject solutions that land far outside the room.  Allow a generous margin
+  // (2× room dimensions) so legitimate near-wall sounds aren't clipped.
+  const ROOM_MARGIN = 2; // meters beyond room edges
+  const xMin = -5 - ROOM_MARGIN, xMax = 5 + ROOM_MARGIN;
+  const yMin = -3.5 - ROOM_MARGIN, yMax = 3.5 + ROOM_MARGIN;
+
+  if (x < xMin || x > xMax || y < yMin || y > yMax) {
+    console.log(
+      `[tdoa] REJECTED: solution (${x.toFixed(2)}, ${y.toFixed(2)}) outside room bounds ` +
+      `[${xMin},${xMax}] × [${yMin},${yMax}]  (residual=${residual.toFixed(4)}m)`
+    );
+    return null;
+  }
 
   return { x: parseFloat(x.toFixed(4)), y: parseFloat(y.toFixed(4)), residual: parseFloat(residual.toFixed(6)) };
 }

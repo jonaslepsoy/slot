@@ -71,24 +71,28 @@ async function run() {
   console.log('  Current mode:', modeGet.mode);
   console.log();
 
-  // ── Test 2: Send sync packets ──────────────────────────────────────────────
-  console.log('[Test 2] Send sync packets from all phones (side-by-side)...');
-  const syncTime = Date.now();
+  // ── Test 2: Send sync packets (multiple rounds) ────────────────────────────
+  const { SYNC_ROUNDS } = require('./config');
+  console.log(`[Test 2] Send ${SYNC_ROUNDS} sync rounds from all phones (side-by-side)...`);
   const drifts = { 'phone-a': 15, 'phone-b': -8, 'phone-c': 0 };
   let syncResult;
-  for (const id of deviceIds) {
-    const r = await request('POST', '/packet', buildClump(id, syncTime + drifts[id]));
-    syncResult = r;
+  for (let round = 0; round < SYNC_ROUNDS; round++) {
+    const syncTime = Date.now() + round * 2000; // separate each round in time
+    for (const id of deviceIds) {
+      const r = await request('POST', '/packet', buildClump(id, syncTime + drifts[id]));
+      syncResult = r;
+    }
   }
   console.log('  Sync status:', syncResult.status);
+  console.log('  Rounds:     ', syncResult.rounds);
   console.log('  Offsets:    ', syncResult.offsets);
   const modeAfterSync = await request('GET', '/mode');
   console.log('  Mode after sync:', modeAfterSync.mode, '(should be localize)');
   console.log();
 
-  // ── Test 3: Localize sound at center (5, 5) ────────────────────────────────
-  console.log('[Test 3] Localize sound at center (5, 5) m...');
-  const src1 = { x: 5, y: 5 };
+  // ── Test 3: Localize sound at room center (0, 0) ──────────────────────────
+  console.log('[Test 3] Localize sound at room center (0, 0) m...');
+  const src1 = { x: 0, y: 0 };
   const t1 = Date.now();
   let e1Result;
   for (const id of deviceIds) {
@@ -105,9 +109,9 @@ async function run() {
   console.log('  Error (m):  ', err1.toFixed(4));
   console.log();
 
-  // ── Test 4: Localize sound near a corner (1, 9) ────────────────────────────
-  console.log('[Test 4] Localize sound near corner (1, 9) m...');
-  const src2 = { x: 1, y: 9 };
+  // ── Test 4: Localize sound near back-left (-3, 2.5) ────────────────────────
+  console.log('[Test 4] Localize sound near back-left (-3, 2.5) m...');
+  const src2 = { x: -3, y: 2.5 };
   const t2 = Date.now();
   let e2Result;
   const shuffled = [...deviceIds].sort(() => Math.random() - 0.5); // random order

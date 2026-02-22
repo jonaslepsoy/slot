@@ -21,7 +21,7 @@
 
 const http = require('http');
 const readline = require('readline');
-const { DEVICES, SPEED_OF_SOUND } = require('./config');
+const { DEVICES, SPEED_OF_SOUND, SYNC_ROUNDS } = require('./config');
 
 // ── CLI args ──────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -123,32 +123,44 @@ async function simulateSync() {
     return;
   }
   console.log('  ✓ Server is now in sync mode.');
-  console.log('\n  Simulating all phones placed side-by-side and detecting a sync sound...');
+  console.log(`\n  Simulating ${SYNC_ROUNDS} sync rounds (phones side-by-side)...\n`);
 
   const deviceIds = Object.keys(DEVICES);
-  const trueTime = Date.now();
 
-  for (const id of deviceIds) {
-    const timestamp = trueTime + drifts[id];
-    const clump = buildClump(id, timestamp, 25000);
-    console.log(`  → Sending ${clump.length}-sample clump from ${id} (drift: ${drifts[id] >= 0 ? '+' : ''}${drifts[id]} ms)`);
-    const res = await request('POST', '/packet', clump);
-    if (res.body.status === 'complete') {
-      console.log('\n  ✓ Sync complete! Server switched back to localize mode.');
-      console.log('  Calculated offsets (ms):');
-      Object.entries(res.body.offsets).forEach(([devId, off]) => {
-        console.log(`    ${devId}: ${off >= 0 ? '+' : ''}${off.toFixed(3)} ms`);
-      });
+  for (let round = 1; round <= SYNC_ROUNDS; round++) {
+    const trueTime = Date.now();
+
+    for (const id of deviceIds) {
+      const timestamp = trueTime + drifts[id];
+      const clump = buildClump(id, timestamp, 25000);
+      const res = await request('POST', '/packet', clump);
+
+      if (res.body.status === 'complete') {
+        console.log(`  ✓ Round ${round}/${SYNC_ROUNDS} — sync complete!`);
+        console.log('  Final median offsets (ms):');
+        Object.entries(res.body.offsets).forEach(([devId, off]) => {
+          console.log(`    ${devId}: ${off >= 0 ? '+' : ''}${off.toFixed(3)} ms`);
+        });
+        console.log('');
+        return;
+      }
+
+      if (res.body.status === 'round_complete') {
+        // Round finished but need more rounds — logged below
+      }
+
+      await delay(10 + Math.random() * 15);
     }
-    await delay(20 + Math.random() * 30); // small random network delay
+
+    console.log(`  ✓ Round ${round}/${SYNC_ROUNDS} complete`);
+    await delay(200 + Math.random() * 100); // pause between rounds
   }
   console.log('');
 }
 
 async function simulateEvent(srcX, srcY) {
-  const roomSize = 10;
-  const x = srcX !== undefined ? srcX : parseFloat((Math.random() * roomSize).toFixed(3));
-  const y = srcY !== undefined ? srcY : parseFloat((Math.random() * roomSize).toFixed(3));
+  const x = srcX !== undefined ? srcX : parseFloat(((Math.random() * 10) - 5).toFixed(3));
+  const y = srcY !== undefined ? srcY : parseFloat(((Math.random() * 7) - 3.5).toFixed(3));
 
   console.log(`\n  Simulating sound at (${x}, ${y}) m...`);
 

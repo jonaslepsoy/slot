@@ -29,7 +29,7 @@ function init(httpServer) {
 
   wss.on('connection', (ws, req) => {
     const addr = req.socket.remoteAddress;
-    console.log(`[ws] Client connected from ${addr}`);
+    // console.log(`[ws] Client connected from ${addr}`);
 
     // Send a welcome message so the frontend knows the socket is live.
     ws.send(JSON.stringify({ type: 'connected', message: 'Sound Localization Server connected. Listening for events.' }));
@@ -58,9 +58,9 @@ function broadcastEvent(event) {
     }
   });
 
-  if (sent > 0) {
+  /*if (sent > 0) {
     console.log(`[ws] Broadcast event #${event.id} → (${event.position.x}, ${event.position.y}) m to ${sent} client(s)`);
-  }
+  }*/
 }
 
 /** Returns the number of currently connected WebSocket clients. */

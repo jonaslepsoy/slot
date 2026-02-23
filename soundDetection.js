@@ -66,9 +66,9 @@ function detectClapOnset(samples) {
   // If we couldn't find a below-threshold sample, return the earliest
   // above-threshold sample as-is (no interpolation possible).
   if (crossingIdx === 0) {
-    console.log(
+    /*console.log(
       `[onset] ${sorted[0].deviceId}: all samples ≥ threshold — using earliest sample ts=${sorted[0].timestamp}`
-    );
+    );*/
     return sorted[0];
   }
 
@@ -90,18 +90,18 @@ function detectClapOnset(samples) {
   const interpolatedTimestamp = below.timestamp + fraction * dt;
 
   if (dt === 0) {
-    console.log(
+    /*console.log(
       `[onset] ${above.deviceId}: WARNING identical timestamps (${above.timestamp}) ` +
       `on crossing pair — interpolation ineffective`
-    );
+    );*/
   } else {
     const walkBack = onsetIdx - crossingIdx;
     const walkInfo = walkBack > 0 ? ` (walked back ${walkBack} sample${walkBack > 1 ? 's' : ''})` : '';
-    console.log(
+    /*console.log(
       `[onset] ${above.deviceId}: below=${below.loudnessDb} above=${above.loudnessDb} ` +
       `threshold=${CLAP_THRESHOLD} → fraction=${fraction.toFixed(4)} ` +
       `ts=${below.timestamp}..${above.timestamp} (dt=${dt}ms) → ${interpolatedTimestamp.toFixed(2)}${walkInfo}`
-    );
+    );*/
   }
 
   return {

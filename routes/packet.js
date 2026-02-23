@@ -143,6 +143,13 @@ router.post('/', (req, res) => {
       }
     }
 
+    // Clear previous offsets on the very first packet of a brand-new sync session
+    // (no rounds collected yet and sync buffer was empty before this packet).
+    if (store.getSyncRounds().length === 0 && existingEntries.length === 0) {
+      store.clearOffsets();
+      console.log('[sync] New sync session started — previous offsets cleared.');
+    }
+
     store.setSyncPacket(deviceId, onset.timestamp);
 
     const deviceIds = Object.keys(DEVICES);

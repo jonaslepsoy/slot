@@ -37,9 +37,8 @@ router.post('/', (req, res) => {
   store.clearSyncBuffer();
 
   if (mode === 'sync') {
-    store.clearOffsets();
     store.clearSyncRounds();
-    console.log('[mode] Switched to sync mode. Previous offsets cleared.');
+    console.log('[mode] Switched to sync mode. Existing offsets kept until new sync completes.');
   } else {
     console.log('[mode] Switched to localize mode.');
   }

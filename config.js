@@ -34,7 +34,7 @@ const CLAP_THRESHOLD = 10000; // Minimum loudness to register a clapOnset
 // Maximum time (ms) to wait for all phones to report a sync clap.
 // If the first phone's clap is older than this when a new one arrives,
 // the partial sync data is discarded and a fresh sync round begins.
-const SYNC_WINDOW_MS = 5000;
+const SYNC_WINDOW_MS = 1000;
 
 // Number of sync clap rounds to collect before calculating final offsets.
 // More rounds → better accuracy (error scales as 1/√N).

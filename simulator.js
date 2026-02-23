@@ -160,7 +160,7 @@ async function simulateSync() {
 
 async function simulateEvent(srcX, srcY) {
   const x = srcX !== undefined ? srcX : parseFloat(((Math.random() * 10) - 5).toFixed(3));
-  const y = srcY !== undefined ? srcY : parseFloat(((Math.random() * 7) - 3.5).toFixed(3));
+  const y = srcY !== undefined ? srcY : parseFloat(((Math.random() * 6) - 3).toFixed(3));
 
   console.log(`\n  Simulating sound at (${x}, ${y}) m...`);
 
@@ -179,7 +179,7 @@ async function simulateEvent(srcX, srcY) {
     const timestamp = trueEmission + travelMs + drifts[id];
     const peakLoudness = Math.round(28000 - dist * 400 + (Math.random() * 800 - 400));
     const clump = buildClump(id, timestamp, peakLoudness);
-    console.log(`  → ${id}: dist=${dist.toFixed(3)} m, travel=${travelMs.toFixed(3)} ms, peak=${peakLoudness} dB, ${clump.length} samples`);
+    console.log(`  → ${id}: dist=${dist.toFixed(3)} m, travel=${travelMs.toFixed(3)} ms, peak=${toDb(peakLoudness)} dB, ${clump.length} samples`);
     const res = await request('POST', '/packet', clump);
     lastResponse = res;
     await delay(10 + Math.random() * 20);
@@ -194,6 +194,15 @@ async function simulateEvent(srcX, srcY) {
     console.log(`\n  Server response: ${JSON.stringify(lastResponse?.body)}\n`);
   }
   timeoutId = setTimeout(simulateEvent, 5000);
+}
+
+/**
+ * Convert a raw amplitude value to decibels (dB).
+ * Uses 20·log10(amplitude), with a floor of 0 dB for values ≤ 1.
+ */
+function toDb(amplitude) {
+  if (amplitude <= 1) return 0;
+  return parseFloat((20 * Math.log10(amplitude)).toFixed(1));
 }
 
 async function showStatus() {
